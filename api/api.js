@@ -15,7 +15,7 @@ async function crearUsuario(usuario) {
     body: JSON.stringify(usuario),
   });
 
-  if (!respuesta.ok) throw new Error("Nope, no se pudo crear usuario");
+  if (!respuesta.ok) throw new Error("Nope, no se pudo crear usuario jiji");
 
   return await respuesta.json();
 }
