@@ -1,5 +1,5 @@
 "use client";
-import { tomarUsuarios } from "../../../api/api";
+import { tomarUsuarios } from "../../api/api";
 import { useEffect, useState } from "react";
 
 export default function Usuarios() {
