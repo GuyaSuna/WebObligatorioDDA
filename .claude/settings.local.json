@@ -10,7 +10,10 @@
       "Bash(npm run build:*)",
       "Bash(curl:*)",
       "Bash(cp:*)",
-      "Bash(xargs rm:*)"
+      "Bash(xargs rm:*)",
+      "Bash(node:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
