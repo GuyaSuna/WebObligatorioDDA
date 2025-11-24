@@ -1,353 +1,230 @@
 "use client";
-import { tomarContenidos, crearContenido, actualizarContenido, eliminarContenido } from "../../api/api";
+import { tomarPokemones } from "../../api/api";
 import { useEffect, useState } from "react";
 import Navigation from "../components/Navigation";
 
-export default function Contenidos() {
-  const [contenidos, setContenidos] = useState([]);
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [contenidoEnEdicion, setContenidoEnEdicion] = useState(null);
-  const [formulario, setFormulario] = useState({
-    titulo: "",
-    descripcion: "",
-    categoria: "",
-    duracion: "",
-    anoEstreno: "",
-    precio: "",
-    imagenPortada: "",
-    enlaceTrailer: "",
-    exclusivoPremium: false
-  });
+export default function CentroPokemon() {
+  const [pokemones, setPokemones] = useState([]);
 
-  const cargarContenidos = async () => {
+  const cargarPokemones = async () => {
     try {
-      const data = await tomarContenidos();
-      setContenidos(data);
+      const data = await tomarPokemones();
+      setPokemones(data);
     } catch (error) {
-      console.error("Error al cargar contenidos:", error);
+      console.error("Error al cargar pokemones:", error);
     }
   };
 
   useEffect(() => {
-    cargarContenidos();
+    cargarPokemones();
   }, []);
 
-  const manejarCambioFormulario = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormulario(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  const manejarSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (contenidoEnEdicion) {
-        await actualizarContenido(contenidoEnEdicion.id, formulario);
-      } else {
-        await crearContenido(formulario);
-      }
-      await cargarContenidos();
-      resetearFormulario();
-    } catch (error) {
-      console.error("Error al guardar contenido:", error);
-    }
-  };
-
-  const manejarEditar = (contenido) => {
-    setContenidoEnEdicion(contenido);
-    setFormulario(contenido);
-    setMostrarFormulario(true);
-  };
-
-  const manejarEliminar = async (id) => {
-    if (confirm("¿Está seguro de eliminar este contenido?")) {
-      try {
-        await eliminarContenido(id);
-        await cargarContenidos();
-      } catch (error) {
-        console.error("Error al eliminar contenido:", error);
-      }
-    }
-  };
-
-  const resetearFormulario = () => {
-    setFormulario({
-      titulo: "",
-      descripcion: "",
-      categoria: "",
-      duracion: "",
-      anoEstreno: "",
-      precio: "",
-      imagenPortada: "",
-      enlaceTrailer: "",
-      exclusivoPremium: false
-    });
-    setContenidoEnEdicion(null);
-    setMostrarFormulario(false);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       <Navigation />
       <div className="p-8">
-        <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Gestión de Contenidos</h1>
-          <button
-            onClick={() => setMostrarFormulario(!mostrarFormulario)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            {mostrarFormulario ? "Cancelar" : "Nuevo Contenido"}
-          </button>
-        </div>
-
-        {mostrarFormulario && (
-          <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 className="text-xl font-semibold mb-4">
-              {contenidoEnEdicion ? "Editar Contenido" : "Nuevo Contenido"}
-            </h2>
-            <form onSubmit={manejarSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Título
-                </label>
-                <input
-                  type="text"
-                  name="titulo"
-                  value={formulario.titulo}
-                  onChange={manejarCambioFormulario}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Categoría
-                </label>
-                <select
-                  name="categoria"
-                  value={formulario.categoria}
-                  onChange={manejarCambioFormulario}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Seleccionar categoría</option>
-                  <option value="accion">Acción</option>
-                  <option value="drama">Drama</option>
-                  <option value="comedia">Comedia</option>
-                  <option value="terror">Terror</option>
-                  <option value="ciencia-ficcion">Ciencia Ficción</option>
-                  <option value="romance">Romance</option>
-                  <option value="documentales">Documentales</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Duración (minutos)
-                </label>
-                <input
-                  type="number"
-                  name="duracion"
-                  value={formulario.duracion}
-                  onChange={manejarCambioFormulario}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Año de Estreno
-                </label>
-                <input
-                  type="number"
-                  name="anoEstreno"
-                  value={formulario.anoEstreno}
-                  onChange={manejarCambioFormulario}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Precio
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="precio"
-                  value={formulario.precio}
-                  onChange={manejarCambioFormulario}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Imagen de Portada (URL)
-                </label>
-                <input
-                  type="url"
-                  name="imagenPortada"
-                  value={formulario.imagenPortada}
-                  onChange={manejarCambioFormulario}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Descripción
-                </label>
-                <textarea
-                  name="descripcion"
-                  value={formulario.descripcion}
-                  onChange={manejarCambioFormulario}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Enlace de Trailer
-                </label>
-                <input
-                  type="url"
-                  name="enlaceTrailer"
-                  value={formulario.enlaceTrailer}
-                  onChange={manejarCambioFormulario}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="exclusivoPremium"
-                  checked={formulario.exclusivoPremium}
-                  onChange={manejarCambioFormulario}
-                  className="mr-2"
-                />
-                <label className="text-gray-700 text-sm font-bold">
-                  Exclusivo Premium
-                </label>
-              </div>
-              <div className="md:col-span-2 flex gap-4">
-                <button
-                  type="submit"
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-md transition-colors"
-                >
-                  {contenidoEnEdicion ? "Actualizar" : "Crear"} Contenido
-                </button>
-                <button
-                  type="button"
-                  onClick={resetearFormulario}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition-colors"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">
+              {" "}
+              Centro Pokémon
+            </h1>
+            <p className="text-xl text-gray-600">
+              Cuidado profesional y gestión de la salud de tus Pokémon
+            </p>
           </div>
-        )}
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <h2 className="text-xl font-semibold p-6 bg-gray-50 border-b">Lista de Contenidos</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Título
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Categoría
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Duración
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Año
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Precio
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Premium
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {contenidos.map((contenido) => (
-                  <tr key={contenido.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {contenido.imagenPortada && (
-                          <img
-                            className="h-10 w-10 rounded object-cover mr-3"
-                            src={contenido.imagenPortada}
-                            alt={contenido.titulo}
-                          />
-                        )}
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {contenido.titulo}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {contenido.descripcion?.substring(0, 50)}...
-                          </div>
+          {/* Lista de Pokémon en el Centro */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <h2 className="text-xl font-semibold p-6 bg-gray-50 border-b">
+              Pacientes en el Centro Pokémon
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
+              {pokemones.map((pokemon) => {
+                const estadoSalud =
+                  pokemon.estadisticas.hp > 70
+                    ? "saludable"
+                    : pokemon.estadisticas.hp > 40
+                    ? "cuidado"
+                    : "critico";
+                const colorEstado =
+                  estadoSalud === "saludable"
+                    ? "bg-green-100 text-green-800"
+                    : estadoSalud === "cuidado"
+                    ? "bg-orange-100 text-orange-800"
+                    : "bg-red-100 text-red-800";
+
+                return (
+                  <div
+                    key={pokemon.id}
+                    className="bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow p-4"
+                  >
+                    <div className="text-center mb-4">
+                      <img
+                        className="h-20 w-20 mx-auto mb-3"
+                        src={pokemon.sprite}
+                        alt={pokemon.nombre}
+                      />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {pokemon.nombre}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        #{pokemon.numero.toString().padStart(3, "0")} • Nivel{" "}
+                        {pokemon.nivel}
+                      </p>
+                    </div>
+
+                    {/* Barras de Estadísticas */}
+                    <div className="space-y-2 mb-4">
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>HP</span>
+                          <span>{pokemon.estadisticas.hp}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              pokemon.estadisticas.hp > 70
+                                ? "bg-green-500"
+                                : pokemon.estadisticas.hp > 40
+                                ? "bg-orange-500"
+                                : "bg-red-500"
+                            }`}
+                            style={{
+                              width: `${Math.min(
+                                pokemon.estadisticas.hp,
+                                100
+                              )}%`,
+                            }}
+                          ></div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {contenido.categoria}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {contenido.duracion} min
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {contenido.anoEstreno}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${contenido.precio}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
-                        contenido.exclusivoPremium
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {contenido.exclusivoPremium ? 'Premium' : 'Estándar'}
+
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>Ataque</span>
+                          <span>{pokemon.estadisticas.ataque}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1">
+                          <div
+                            className="h-1 rounded-full bg-red-400"
+                            style={{
+                              width: `${Math.min(
+                                pokemon.estadisticas.ataque / 1.5,
+                                100
+                              )}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>Defensa</span>
+                          <span>{pokemon.estadisticas.defensa}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1">
+                          <div
+                            className="h-1 rounded-full bg-blue-400"
+                            style={{
+                              width: `${Math.min(
+                                pokemon.estadisticas.defensa / 1.5,
+                                100
+                              )}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Estado de Salud */}
+                    <div className="text-center">
+                      <span
+                        className={`inline-flex px-3 py-1 text-xs rounded-full font-medium ${colorEstado}`}
+                      >
+                        {estadoSalud === "saludable"
+                          ? "💚 Saludable"
+                          : estadoSalud === "cuidado"
+                          ? "🟡 Necesita Cuidado"
+                          : "🔴 Estado Crítico"}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => manejarEditar(contenido)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => manejarEliminar(contenido.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {contenidos.length === 0 && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        {pokemon.entrenador}
+                      </p>
+                      <p className="text-xs text-gray-500">{pokemon.region}</p>
+                    </div>
+
+                    {/* Tipos */}
+                    <div className="flex flex-wrap gap-1 justify-center mt-3">
+                      {pokemon.tipos.slice(0, 2).map((tipo) => (
+                        <span
+                          key={tipo}
+                          className="px-2 py-1 text-xs text-white rounded-full bg-gray-500"
+                        >
+                          {tipo}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {pokemones.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-500">No hay contenidos registrados</p>
+                <p className="text-gray-500">
+                  Cargando pacientes del Centro Pokémon...
+                </p>
               </div>
             )}
           </div>
-        </div>
+
+          {/* Servicios del Centro Pokémon */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="text-center">
+                <div className="bg-green-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-2xl">🩺</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Cuidados Médicos
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Atención médica profesional para mantener a tus Pokémon en
+                  perfecto estado de salud
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="text-center">
+                <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-2xl">🏃‍♀️</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Entrenamiento
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Programas de entrenamiento personalizados para mejorar las
+                  estadísticas de tus Pokémon
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="text-center">
+                <div className="bg-purple-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-2xl">💊</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Medicina Pokémon
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Medicamentos y pociones especializadas para la recuperación
+                  rápida
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

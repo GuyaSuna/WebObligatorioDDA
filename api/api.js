@@ -1,66 +1,111 @@
-const LOCAL_STORAGE_KEY = "ejemplo_usuarios_app";
+let pokemonsEnMemoria = [];
+let nextId = 1;
 
-// Simulamos datos locales solo para usuarios
-let localData = {
-  usuarios: [
-    { id: 1, nombre: "Juan Pérez", email: "juan@email.com", fechaRegistro: "2024-01-15", tipoUsuario: "premium" },
-    { id: 2, nombre: "María García", email: "maria@email.com", fechaRegistro: "2024-02-10", tipoUsuario: "estandar" },
-    { id: 3, nombre: "Carlos López", email: "carlos@email.com", fechaRegistro: "2024-01-20", tipoUsuario: "premium" }
-  ]
-};
+async function tomarPokemones() {
+  try {
+    if (pokemonsEnMemoria.length > 0) {
+      return pokemonsEnMemoria;
+    }
 
-// Cargar datos del localStorage si existen
-function cargarDatosLocales() {
-  const datos = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (datos) {
-    localData = JSON.parse(datos);
+    const response = await fetch("https://pokeapi.co/api/v2/pokemon?limit=20");
+    const data = await response.json();
+
+    const pokemonData = await Promise.all(
+      data.results.map(async (pokemon, index) => {
+        const pokemonDetails = await fetch(pokemon.url);
+        const details = await pokemonDetails.json();
+
+        return {
+          id: index + 1,
+          nombre: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
+          numero: details.id,
+          altura: details.height / 10,
+          peso: details.weight / 10,
+          tipos: details.types.map((type) => type.type.name),
+          habilidades: details.abilities.map((ability) => ability.ability.name),
+          experienciaBase: details.base_experience,
+          estadisticas: {
+            hp: details.stats[0].base_stat,
+            ataque: details.stats[1].base_stat,
+            defensa: details.stats[2].base_stat,
+            velocidad: details.stats[5].base_stat,
+          },
+          sprite: details.sprites.front_default,
+          spriteShiny: details.sprites.front_shiny,
+          rareza:
+            details.base_experience > 150
+              ? "legendario"
+              : details.base_experience > 100
+              ? "raro"
+              : "común",
+          fechaCaptura: new Date().toISOString().split("T")[0],
+          entrenador: `Entrenador ${Math.floor(Math.random() * 100) + 1}`,
+          nivel: Math.floor(Math.random() * 50) + 1,
+          region:
+            index < 5
+              ? "Kanto"
+              : index < 10
+              ? "Johto"
+              : index < 15
+              ? "Hoenn"
+              : "Sinnoh",
+          estado: "capturado",
+        };
+      })
+    );
+
+    pokemonsEnMemoria = pokemonData;
+    nextId = pokemonData.length + 1;
+    return pokemonsEnMemoria;
+  } catch (error) {
+    console.error("Error al obtener datos de la Poké API:", error);
+    return pokemonsEnMemoria;
   }
 }
 
-// Guardar datos en localStorage
-function guardarDatosLocales() {
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localData));
+async function crearPokemon(pokemon) {
+  if (pokemonsEnMemoria.length === 0) {
+    await tomarPokemones();
+  }
+
+  const nuevoPokemon = {
+    ...pokemon,
+    id: nextId++,
+    fechaCaptura: new Date().toISOString().split("T")[0],
+    estado: "capturado",
+  };
+
+  pokemonsEnMemoria.push(nuevoPokemon);
+  return nuevoPokemon;
 }
 
-async function tomarUsuarios() {
-  cargarDatosLocales();
-  return localData.usuarios;
-}
+async function actualizarPokemon(id, pokemonActualizado) {
+  if (pokemonsEnMemoria.length === 0) {
+    await tomarPokemones();
+  }
 
-async function crearUsuario(usuario) {
-  cargarDatosLocales();
-  const nuevoId = Math.max(...localData.usuarios.map(u => u.id), 0) + 1;
-  const nuevoUsuario = { ...usuario, id: nuevoId };
-  localData.usuarios.push(nuevoUsuario);
-  guardarDatosLocales();
-  return nuevoUsuario;
-}
-
-async function actualizarUsuario(id, usuarioActualizado) {
-  cargarDatosLocales();
-  const index = localData.usuarios.findIndex(u => u.id == id);
+  const index = pokemonsEnMemoria.findIndex((p) => p.id == id);
   if (index !== -1) {
-    localData.usuarios[index] = { ...localData.usuarios[index], ...usuarioActualizado };
-    guardarDatosLocales();
-    return localData.usuarios[index];
+    pokemonsEnMemoria[index] = {
+      ...pokemonsEnMemoria[index],
+      ...pokemonActualizado,
+    };
+    return pokemonsEnMemoria[index];
   }
-  throw new Error("Usuario no encontrado");
+  throw new Error("Pokémon no encontrado");
 }
 
-async function eliminarUsuario(id) {
-  cargarDatosLocales();
-  const index = localData.usuarios.findIndex(u => u.id == id);
+async function liberarPokemon(id) {
+  if (pokemonsEnMemoria.length === 0) {
+    await tomarPokemones();
+  }
+
+  const index = pokemonsEnMemoria.findIndex((p) => p.id == id);
   if (index !== -1) {
-    const eliminado = localData.usuarios.splice(index, 1)[0];
-    guardarDatosLocales();
-    return eliminado;
+    const liberado = pokemonsEnMemoria.splice(index, 1)[0];
+    return liberado;
   }
-  throw new Error("Usuario no encontrado");
+  throw new Error("Pokémon no encontrado");
 }
 
-export {
-  tomarUsuarios,
-  crearUsuario,
-  actualizarUsuario,
-  eliminarUsuario
-};
+export { tomarPokemones, crearPokemon, actualizarPokemon, liberarPokemon };

@@ -1,369 +1,397 @@
 "use client";
-import { obtenerReportes, tomarContenidos, tomarUsuarios } from "../../api/api";
+import { tomarPokemones } from "../../api/api";
 import { useEffect, useState } from "react";
 import Navigation from "../components/Navigation";
 
-export default function Reportes() {
-  const [contenidosPopulares, setContenidosPopulares] = useState([]);
-  const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
-  const [reproduccionesUsuario, setReproduccionesUsuario] = useState([]);
-  const [promedioCalificaciones, setPromedioCalificaciones] = useState([]);
-  const [contenidosFecha, setContenidosFecha] = useState([]);
-
-  const [filtros, setFiltros] = useState({
-    minReproducciones: 5,
-    tipoUsuario: "todos",
-    fechaDesde: "",
-    fechaHasta: "",
-    usuarioId: "",
-    contenidoId: "",
-    fechaEspecifica: ""
+export default function EstadisticasEntrenador() {
+  const [pokemones, setPokemones] = useState([]);
+  const [estadisticas, setEstadisticas] = useState({
+    totalCapturados: 0,
+    nivelPromedio: 0,
+    pokemonMasFuerte: null,
+    tipoMasComun: "",
+    regionMasExplorada: "",
+    rareza: {
+      legendarios: 0,
+      raros: 0,
+      comunes: 0,
+    },
   });
 
-  const [usuarios, setUsuarios] = useState([]);
-  const [contenidos, setContenidos] = useState([]);
-
-  const cargarDatosBasicos = async () => {
+  const cargarDatos = async () => {
     try {
-      const [usuariosData, contenidosData] = await Promise.all([
-        tomarUsuarios(),
-        tomarContenidos()
-      ]);
-      setUsuarios(usuariosData);
-      setContenidos(contenidosData);
+      const data = await tomarPokemones();
+      setPokemones(data);
+      calcularEstadisticas(data);
     } catch (error) {
-      console.error("Error al cargar datos básicos:", error);
+      console.error("Error al cargar pokemones:", error);
     }
+  };
+
+  const calcularEstadisticas = (pokemones) => {
+    if (pokemones.length === 0) return;
+
+    const totalCapturados = pokemones.length;
+
+    const nivelPromedio = Math.round(
+      pokemones.reduce((sum, p) => sum + p.nivel, 0) / pokemones.length
+    );
+
+    const pokemonMasFuerte = pokemones.reduce((strongest, current) => {
+      const strongestTotal =
+        strongest.estadisticas.hp +
+        strongest.estadisticas.ataque +
+        strongest.estadisticas.defensa +
+        strongest.estadisticas.velocidad;
+      const currentTotal =
+        current.estadisticas.hp +
+        current.estadisticas.ataque +
+        current.estadisticas.defensa +
+        current.estadisticas.velocidad;
+      return currentTotal > strongestTotal ? current : strongest;
+    });
+
+    const tiposCount = {};
+    pokemones.forEach((pokemon) => {
+      pokemon.tipos.forEach((tipo) => {
+        tiposCount[tipo] = (tiposCount[tipo] || 0) + 1;
+      });
+    });
+    const tipoMasComun = Object.keys(tiposCount).reduce(
+      (a, b) => (tiposCount[a] > tiposCount[b] ? a : b),
+      ""
+    );
+
+    const regionesCount = {};
+    pokemones.forEach((pokemon) => {
+      regionesCount[pokemon.region] = (regionesCount[pokemon.region] || 0) + 1;
+    });
+    const regionMasExplorada = Object.keys(regionesCount).reduce(
+      (a, b) => (regionesCount[a] > regionesCount[b] ? a : b),
+      ""
+    );
+
+    const rareza = {
+      legendarios: pokemones.filter((p) => p.rareza === "legendario").length,
+      raros: pokemones.filter((p) => p.rareza === "raro").length,
+      comunes: pokemones.filter((p) => p.rareza === "común").length,
+    };
+
+    setEstadisticas({
+      totalCapturados,
+      nivelPromedio,
+      pokemonMasFuerte,
+      tipoMasComun,
+      regionMasExplorada,
+      rareza,
+    });
   };
 
   useEffect(() => {
-    cargarDatosBasicos();
+    cargarDatos();
   }, []);
 
-  const manejarCambioFiltro = (e) => {
-    const { name, value } = e.target;
-    setFiltros(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const obtenerColorTipo = (tipo) => {
+    const colores = {
+      grass: "bg-green-500",
+      fire: "bg-red-500",
+      water: "bg-blue-500",
+      electric: "bg-yellow-500",
+      normal: "bg-gray-500",
+      flying: "bg-indigo-400",
+      poison: "bg-purple-500",
+      ground: "bg-yellow-700",
+      rock: "bg-yellow-800",
+      bug: "bg-green-700",
+      ghost: "bg-purple-700",
+      steel: "bg-gray-700",
+      fighting: "bg-red-700",
+      psychic: "bg-pink-500",
+      ice: "bg-blue-300",
+      dragon: "bg-indigo-700",
+      dark: "bg-gray-900",
+      fairy: "bg-pink-300",
+    };
+    return colores[tipo] || "bg-gray-500";
   };
 
-  const buscarContenidosPopulares = async () => {
-    try {
-      const data = await obtenerReportes(`contenidos-populares?min=${filtros.minReproducciones}`);
-      setContenidosPopulares(data);
-    } catch (error) {
-      console.error("Error al obtener contenidos populares:", error);
-      setContenidosPopulares([]);
-    }
-  };
+  const pokemonesPorRegion = pokemones.reduce((acc, pokemon) => {
+    acc[pokemon.region] = (acc[pokemon.region] || 0) + 1;
+    return acc;
+  }, {});
 
-  const buscarUsuarios = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (filtros.tipoUsuario !== "todos") params.append("tipo", filtros.tipoUsuario);
-      if (filtros.fechaDesde) params.append("fechaDesde", filtros.fechaDesde);
-      if (filtros.fechaHasta) params.append("fechaHasta", filtros.fechaHasta);
-
-      const data = await obtenerReportes(`usuarios?${params.toString()}`);
-      setUsuariosFiltrados(data);
-    } catch (error) {
-      console.error("Error al obtener usuarios:", error);
-      setUsuariosFiltrados([]);
-    }
-  };
-
-  const buscarReproduccionesUsuario = async () => {
-    if (!filtros.usuarioId) {
-      alert("Seleccione un usuario");
-      return;
-    }
-    try {
-      const data = await obtenerReportes(`reproducciones-usuario/${filtros.usuarioId}`);
-      setReproduccionesUsuario(data);
-    } catch (error) {
-      console.error("Error al obtener reproducciones del usuario:", error);
-      setReproduccionesUsuario([]);
-    }
-  };
-
-  const buscarPromedioCalificaciones = async () => {
-    if (!filtros.contenidoId) {
-      alert("Seleccione un contenido");
-      return;
-    }
-    try {
-      const data = await obtenerReportes(`promedio-calificaciones/${filtros.contenidoId}`);
-      setPromedioCalificaciones(data);
-    } catch (error) {
-      console.error("Error al obtener promedio de calificaciones:", error);
-      setPromedioCalificaciones([]);
-    }
-  };
-
-  const buscarContenidosFecha = async () => {
-    if (!filtros.fechaEspecifica) {
-      alert("Seleccione una fecha");
-      return;
-    }
-    try {
-      const data = await obtenerReportes(`contenidos-fecha?fecha=${filtros.fechaEspecifica}`);
-      setContenidosFecha(data);
-    } catch (error) {
-      console.error("Error al obtener contenidos por fecha:", error);
-      setContenidosFecha([]);
-    }
-  };
-
-  const obtenerNombreUsuario = (usuarioId) => {
-    const usuario = usuarios.find(u => u.id == usuarioId);
-    return usuario ? usuario.nombre : "Usuario desconocido";
-  };
-
-  const obtenerTituloContenido = (contenidoId) => {
-    const contenido = contenidos.find(c => c.id == contenidoId);
-    return contenido ? contenido.titulo : "Contenido desconocido";
-  };
+  const pokemonesPorTipo = pokemones.reduce((acc, pokemon) => {
+    pokemon.tipos.forEach((tipo) => {
+      acc[tipo] = (acc[tipo] || 0) + 1;
+    });
+    return acc;
+  }, {});
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
       <Navigation />
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Reportes y Estadísticas</h1>
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">
+              Estadísticas de Entrenador
+            </h1>
+            <p className="text-xl text-gray-600">
+              Analiza tu progreso y logros como entrenador Pokémon
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Contenidos Populares */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Contenidos Populares</h2>
-            <div className="flex gap-4 mb-4">
-              <input
-                type="number"
-                name="minReproducciones"
-                value={filtros.minReproducciones}
-                onChange={manejarCambioFiltro}
-                placeholder="Mín. reproducciones"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-                min="1"
-              />
-              <button
-                onClick={buscarContenidosPopulares}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-              >
-                Buscar
-              </button>
-            </div>
-            <div className="max-h-64 overflow-y-auto">
-              {contenidosPopulares.length > 0 ? (
-                <ul className="space-y-2">
-                  {contenidosPopulares.map((contenido, index) => (
-                    <li key={index} className="p-2 bg-gray-50 rounded">
-                      <span className="font-medium">{contenido.titulo}</span>
-                      <span className="text-gray-600 ml-2">
-                        ({contenido.reproducciones} reproducciones)
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Pokémon Más Fuerte */}
+            {estadisticas.pokemonMasFuerte && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                  Tu Pokémon Más Fuerte
+                </h2>
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={estadisticas.pokemonMasFuerte.sprite}
+                    alt={estadisticas.pokemonMasFuerte.nombre}
+                    className="w-20 h-20"
+                  />
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {estadisticas.pokemonMasFuerte.nombre}
+                    </h3>
+                    <p className="text-gray-600">
+                      Nivel {estadisticas.pokemonMasFuerte.nivel} • #
+                      {estadisticas.pokemonMasFuerte.numero}
+                    </p>
+                    <div className="flex space-x-2 mt-2">
+                      {estadisticas.pokemonMasFuerte.tipos.map((tipo) => (
+                        <span
+                          key={tipo}
+                          className={`px-2 py-1 text-xs text-white rounded-full ${obtenerColorTipo(
+                            tipo
+                          )}`}
+                        >
+                          {tipo}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                      <span>
+                        HP: {estadisticas.pokemonMasFuerte.estadisticas.hp}
                       </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">No hay datos disponibles</p>
-              )}
-            </div>
-          </div>
-
-          {/* Filtro de Usuarios */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Usuarios por Tipo y Fecha</h2>
-            <div className="space-y-4 mb-4">
-              <select
-                name="tipoUsuario"
-                value={filtros.tipoUsuario}
-                onChange={manejarCambioFiltro}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="todos">Todos los usuarios</option>
-                <option value="estandar">Solo Estándar</option>
-                <option value="premium">Solo Premium</option>
-              </select>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="date"
-                  name="fechaDesde"
-                  value={filtros.fechaDesde}
-                  onChange={manejarCambioFiltro}
-                  placeholder="Desde"
-                  className="px-3 py-2 border border-gray-300 rounded-md"
-                />
-                <input
-                  type="date"
-                  name="fechaHasta"
-                  value={filtros.fechaHasta}
-                  onChange={manejarCambioFiltro}
-                  placeholder="Hasta"
-                  className="px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <button
-                onClick={buscarUsuarios}
-                className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
-              >
-                Buscar Usuarios
-              </button>
-            </div>
-            <div className="max-h-64 overflow-y-auto">
-              {usuariosFiltrados.length > 0 ? (
-                <ul className="space-y-2">
-                  {usuariosFiltrados.map((usuario, index) => (
-                    <li key={index} className="p-2 bg-gray-50 rounded">
-                      <span className="font-medium">{usuario.nombre}</span>
-                      <span className={`ml-2 px-2 py-1 text-xs rounded ${
-                        usuario.tipoUsuario === 'premium'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {usuario.tipoUsuario}
+                      <span>
+                        ATK: {estadisticas.pokemonMasFuerte.estadisticas.ataque}
                       </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">No hay datos disponibles</p>
-              )}
-            </div>
-          </div>
-
-          {/* Reproducciones por Usuario */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Reproducciones por Usuario</h2>
-            <div className="flex gap-4 mb-4">
-              <select
-                name="usuarioId"
-                value={filtros.usuarioId}
-                onChange={manejarCambioFiltro}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Seleccionar usuario</option>
-                {usuarios.map((usuario) => (
-                  <option key={usuario.id} value={usuario.id}>
-                    {usuario.nombre}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={buscarReproduccionesUsuario}
-                className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md"
-              >
-                Ver
-              </button>
-            </div>
-            <div className="max-h-64 overflow-y-auto">
-              {reproduccionesUsuario.length > 0 ? (
-                <ul className="space-y-2">
-                  {reproduccionesUsuario.map((reproduccion, index) => (
-                    <li key={index} className="p-2 bg-gray-50 rounded">
-                      <div className="font-medium">{obtenerTituloContenido(reproduccion.contenidoId)}</div>
-                      <div className="text-sm text-gray-600">
-                        {new Date(reproduccion.fechaHora).toLocaleString()} -
-                        Calificación: {reproduccion.calificacion}/5
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">No hay datos disponibles</p>
-              )}
-            </div>
-          </div>
-
-          {/* Promedio de Calificaciones */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Promedio de Calificaciones</h2>
-            <div className="flex gap-4 mb-4">
-              <select
-                name="contenidoId"
-                value={filtros.contenidoId}
-                onChange={manejarCambioFiltro}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Seleccionar contenido</option>
-                {contenidos.map((contenido) => (
-                  <option key={contenido.id} value={contenido.id}>
-                    {contenido.titulo}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={buscarPromedioCalificaciones}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md"
-              >
-                Calcular
-              </button>
-            </div>
-            {promedioCalificaciones && promedioCalificaciones.promedio && (
-              <div className="p-4 bg-orange-50 rounded-lg">
-                <div className="text-lg font-semibold">
-                  Promedio: {parseFloat(promedioCalificaciones.promedio).toFixed(2)}/5
-                </div>
-                <div className="text-sm text-gray-600">
-                  Basado en {promedioCalificaciones.totalCalificaciones} calificaciones
-                </div>
-                <div className="flex items-center mt-2">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className={`h-5 w-5 ${
-                        i < Math.round(promedioCalificaciones.promedio) ? 'text-yellow-400' : 'text-gray-300'
-                      }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
+                      <span>
+                        DEF:{" "}
+                        {estadisticas.pokemonMasFuerte.estadisticas.defensa}
+                      </span>
+                      <span>
+                        SPD:{" "}
+                        {estadisticas.pokemonMasFuerte.estadisticas.velocidad}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
+
+            {/* Distribución por Rareza */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Distribución por Rareza
+              </h2>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-600 font-medium">
+                    Legendarios
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-32 bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-purple-500 h-3 rounded-full"
+                        style={{
+                          width: `${
+                            (estadisticas.rareza.legendarios /
+                              estadisticas.totalCapturados) *
+                            100
+                          }%`,
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium">
+                      {estadisticas.rareza.legendarios}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-orange-600 font-medium">Raros</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-32 bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-orange-500 h-3 rounded-full"
+                        style={{
+                          width: `${
+                            (estadisticas.rareza.raros /
+                              estadisticas.totalCapturados) *
+                            100
+                          }%`,
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium">
+                      {estadisticas.rareza.raros}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-green-600 font-medium">Comunes</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-32 bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-green-500 h-3 rounded-full"
+                        style={{
+                          width: `${
+                            (estadisticas.rareza.comunes /
+                              estadisticas.totalCapturados) *
+                            100
+                          }%`,
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium">
+                      {estadisticas.rareza.comunes}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Contenidos por Fecha */}
-          <div className="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
-            <h2 className="text-xl font-semibold mb-4">Contenidos Reproducidos en Fecha Específica</h2>
-            <div className="flex gap-4 mb-4">
-              <input
-                type="date"
-                name="fechaEspecifica"
-                value={filtros.fechaEspecifica}
-                onChange={manejarCambioFiltro}
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <button
-                onClick={buscarContenidosFecha}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
-              >
-                Buscar
-              </button>
-            </div>
-            <div className="max-h-64 overflow-y-auto">
-              {contenidosFecha.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {contenidosFecha.map((item, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="font-medium">{obtenerTituloContenido(item.contenidoId)}</div>
-                      <div className="text-sm text-gray-600">
-                        Usuario: {obtenerNombreUsuario(item.usuarioId)}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Hora: {new Date(item.fechaHora).toLocaleTimeString()}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Pokémon por Región */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Exploración por Región
+              </h2>
+              <div className="space-y-3">
+                {Object.entries(pokemonesPorRegion)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([region, count]) => (
+                    <div
+                      key={region}
+                      className="flex justify-between items-center"
+                    >
+                      <span className="font-medium">{region}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-500 h-2 rounded-full"
+                            style={{
+                              width: `${
+                                (count / estadisticas.totalCapturados) * 100
+                              }%`,
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-sm text-gray-600">{count}</span>
                       </div>
                     </div>
                   ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">No hay datos disponibles</p>
-              )}
+              </div>
+            </div>
+
+            {/* Tipos Favoritos */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Tipos Más Capturados
+              </h2>
+              <div className="space-y-2">
+                {Object.entries(pokemonesPorTipo)
+                  .sort(([, a], [, b]) => b - a)
+                  .slice(0, 8)
+                  .map(([tipo, count]) => (
+                    <div
+                      key={tipo}
+                      className="flex justify-between items-center"
+                    >
+                      <span
+                        className={`px-2 py-1 text-xs text-white rounded-full ${obtenerColorTipo(
+                          tipo
+                        )}`}
+                      >
+                        {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                      </span>
+                      <span className="text-sm text-gray-600">{count}</span>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* Logros */}
+          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Logros Desbloqueados
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div
+                className={`p-4 rounded-lg border-2 ${
+                  estadisticas.totalCapturados >= 10
+                    ? "bg-yellow-50 border-yellow-300"
+                    : "bg-gray-50 border-gray-300"
+                }`}
+              >
+                <div className="text-center">
+                  <span className="text-2xl"></span>
+                  <p className="font-medium mt-2">Coleccionista Novato</p>
+                  <p className="text-sm text-gray-600">Captura 10 Pokémon</p>
+                  <p className="text-xs mt-1">
+                    {estadisticas.totalCapturados >= 10
+                      ? "¡Desbloqueado!"
+                      : `${estadisticas.totalCapturados}/10`}
+                  </p>
+                </div>
+              </div>
+              <div
+                className={`p-4 rounded-lg border-2 ${
+                  estadisticas.rareza.legendarios >= 1
+                    ? "bg-purple-50 border-purple-300"
+                    : "bg-gray-50 border-gray-300"
+                }`}
+              >
+                <div className="text-center">
+                  <span className="text-2xl"></span>
+                  <p className="font-medium mt-2">Leyenda Viviente</p>
+                  <p className="text-sm text-gray-600">
+                    Captura 1 Pokémon Legendario
+                  </p>
+                  <p className="text-xs mt-1">
+                    {estadisticas.rareza.legendarios >= 1
+                      ? "¡Desbloqueado!"
+                      : `${estadisticas.rareza.legendarios}/1`}
+                  </p>
+                </div>
+              </div>
+              <div
+                className={`p-4 rounded-lg border-2 ${
+                  Object.keys(pokemonesPorRegion).length >= 3
+                    ? "bg-blue-50 border-blue-300"
+                    : "bg-gray-50 border-gray-300"
+                }`}
+              >
+                <div className="text-center">
+                  <span className="text-2xl"></span>
+                  <p className="font-medium mt-2">Explorador</p>
+                  <p className="text-sm text-gray-600">Explora 3 regiones</p>
+                  <p className="text-xs mt-1">
+                    {Object.keys(pokemonesPorRegion).length >= 3
+                      ? "¡Desbloqueado!"
+                      : `${Object.keys(pokemonesPorRegion).length}/3`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
