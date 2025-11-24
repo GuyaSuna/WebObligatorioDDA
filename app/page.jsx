@@ -1,128 +1,101 @@
-"use client";
-import Link from "next/link";
-import { useState, useEffect } from "react";
-import { tomarPokemones } from "../api/api";
+'use client';
 
-export default function Dashboard() {
-  const [stats, setStats] = useState({
-    totalPokemones: 0,
-    pokemonesLegendarios: 0,
-    pokemonesRaros: 0,
-    pokemonesComunes: 0,
-  });
+import { useEffect, useState } from 'react';
 
-  const cargarEstadisticas = async () => {
-    try {
-      const pokemones = await tomarPokemones();
-
-      const pokemonesLegendarios = pokemones.filter(
-        (p) => p.rareza === "legendario"
-      ).length;
-      const pokemonesRaros = pokemones.filter(
-        (p) => p.rareza === "raro"
-      ).length;
-      const pokemonesComunes = pokemones.filter(
-        (p) => p.rareza === "común"
-      ).length;
-
-      setStats({
-        totalPokemones: pokemones.length,
-        pokemonesLegendarios,
-        pokemonesRaros,
-        pokemonesComunes,
-      });
-    } catch (error) {
-      console.error("Error al cargar estadísticas:", error);
-    }
-  };
+export default function Home() {
+  const [estadisticas, setEstadisticas] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    cargarEstadisticas();
+    fetch('/api/dashboard')
+      .then(res => res.json())
+      .then(data => {
+        setEstadisticas(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error al cargar estadísticas:', error);
+        setLoading(false);
+      });
   }, []);
 
-  const menuItems = [
-    {
-      title: "Pokédex",
-      description: "Explorar y gestionar todos los Pokémon capturados",
-      href: "/Usuarios",
-      icon: "📱",
-      color: "bg-blue-500",
-    },
-    {
-      title: "Centro Pokémon",
-      description: "Cuidado y gestión de tus Pokémon",
-      href: "/Contenidos",
-      icon: "🏥",
-      color: "bg-green-500",
-    },
-    {
-      title: "Arena de Batalla",
-      description: "Registros de combates y entrenamientos",
-      href: "/Reproducciones",
-      icon: "⚔️",
-      color: "bg-purple-500",
-    },
-    {
-      title: "Estadísticas de Entrenador",
-      description: "Analiza tu progreso como entrenador",
-      href: "/Reportes",
-      icon: "📊",
-      color: "bg-orange-500",
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center">Cargando dashboard...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto p-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Dashboard de Entrenador Pokémon
-          </h1>
-          <p className="text-xl text-gray-600">
-            Centro de Control para tu Aventura Pokémon
-          </p>
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-8 text-center">Dashboard - Biblioteca Digital</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="card text-center">
+          <h2 className="text-2xl font-bold text-blue-600">{estadisticas?.totalLibros || 0}</h2>
+          <p className="text-gray-600">Total de Libros</p>
         </div>
 
-        {/* Menú de Navegación */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {menuItems.map((item, index) => (
-            <Link
-              key={index}
-              href={item.href}
-              className="block bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
-            >
-              <div className="p-8">
-                <div className="flex items-center mb-4">
-                  <div className={`${item.color} p-4 rounded-lg mr-4`}>
-                    <span className="text-3xl">{item.icon}</span>
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                      {item.title}
-                    </h3>
-                    <p className="text-gray-600">{item.description}</p>
-                  </div>
+        <div className="card text-center">
+          <h2 className="text-2xl font-bold text-green-600">{estadisticas?.totalUsuarios || 0}</h2>
+          <p className="text-gray-600">Total de Usuarios</p>
+        </div>
+
+        <div className="card text-center">
+          <h2 className="text-2xl font-bold text-orange-600">{estadisticas?.prestamosActivos || 0}</h2>
+          <p className="text-gray-600">Préstamos Activos</p>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2 className="text-xl font-semibold mb-4">Libros Más Prestados</h2>
+        {estadisticas?.librosMasPrestados && estadisticas.librosMasPrestados.length > 0 ? (
+          <div className="space-y-3">
+            {estadisticas.librosMasPrestados.map((libro, index) => (
+              <div key={index} className="flex justify-between items-center border-b pb-2">
+                <div>
+                  <h3 className="font-medium">{libro.titulo}</h3>
+                  <p className="text-sm text-gray-600">por {libro.autor}</p>
                 </div>
-                <div className="flex items-center text-blue-600 font-medium">
-                  <span>Acceder</span>
-                  <svg
-                    className="ml-2 w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
+                  {libro.cantidadPrestamos} préstamos
+                </span>
               </div>
-            </Link>
-          ))}
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-600">No hay datos de préstamos disponibles</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+        <div className="card">
+          <h2 className="text-xl font-semibold mb-4">Acciones Rápidas</h2>
+          <div className="space-y-3">
+            <a href="/libros/nuevo" className="btn btn-primary w-full block text-center">
+              ➕ Agregar Nuevo Libro
+            </a>
+            <a href="/usuarios/nuevo" className="btn btn-secondary w-full block text-center">
+              👤 Registrar Usuario
+            </a>
+            <a href="/prestamos/nuevo" className="btn btn-secondary w-full block text-center">
+              📖 Nuevo Préstamo
+            </a>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="text-xl font-semibold mb-4">Sistema de Biblioteca</h2>
+          <p className="text-gray-600 mb-4">
+            Bienvenido al sistema de gestión de biblioteca digital. Aquí puedes:
+          </p>
+          <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+            <li>Gestionar libros físicos y digitales</li>
+            <li>Administrar usuarios (estudiantes y profesores)</li>
+            <li>Controlar préstamos y devoluciones</li>
+            <li>Generar reportes y estadísticas</li>
+          </ul>
         </div>
       </div>
     </div>
