@@ -1,25 +1,25 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { obtenerEstudiante } from '../../api';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { obtenerEstudiante } from "../../api";
 
 export default function EstudianteDetalle() {
   const params = useParams();
   const id = params?.id;
   const [estudiante, setEstudiante] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!id) {
-      setError('ID no proporcionado');
+      setError("ID no proporcionado");
       setLoading(false);
       return;
     }
     obtenerEstudiante(id)
-      .then(data => setEstudiante(data))
-      .catch(err => setError(err.message || 'Error al cargar estudiante'))
+      .then((data) => setEstudiante(data))
+      .catch((err) => setError(err.message || "Error al cargar estudiante"))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -27,7 +27,9 @@ export default function EstudianteDetalle() {
     <div className="container mx-auto p-6 max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Detalle de estudiante</h1>
-        <a href="/estudiantes" className="btn btn-secondary">Volver</a>
+        <a href="/estudiantes" className="btn btn-secondary">
+          Volver
+        </a>
       </div>
 
       {loading && <div className="card">Cargando...</div>}
@@ -45,11 +47,13 @@ export default function EstudianteDetalle() {
           </div>
           <div>
             <p className="text-sm text-gray-500">Email</p>
-            <p className="font-semibold">{estudiante.email || 'Sin email'}</p>
+            <p className="font-semibold">{estudiante.email || "Sin email"}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Carrera</p>
-            <p className="font-semibold">{estudiante.carrera || 'Sin carrera'}</p>
+            <p className="font-semibold">
+              {estudiante.carrera || "Sin carrera"}
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Datos completos</p>

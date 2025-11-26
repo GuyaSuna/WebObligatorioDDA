@@ -1,4 +1,3 @@
-// Cliente API sencillo para estudiantes
 const API_BASE_URL = "http://localhost:5000";
 
 async function request(path, options = {}) {
@@ -9,7 +8,7 @@ async function request(path, options = {}) {
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers
+    headers,
   });
 
   if (!response.ok) {
@@ -29,7 +28,7 @@ const obtenerEstudiante = (id) => request(`/estudiantes/${id}`);
 const crearEstudiante = (datosEstudiante) =>
   request("/estudiantes", {
     method: "POST",
-    body: JSON.stringify(datosEstudiante)
+    body: JSON.stringify(datosEstudiante),
   });
 
 export { obtenerEstudiantes, obtenerEstudiante, crearEstudiante };
